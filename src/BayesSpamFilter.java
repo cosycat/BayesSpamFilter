@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class BayesSpamFilter {
     
@@ -9,8 +10,9 @@ public class BayesSpamFilter {
     
     /**
      * Assigns each word a probability P(word|Spam) and P(word|Ham)
+     *
      * @param spamMails List of Spam Mails
-     * @param hamMails List of Ham Mails
+     * @param hamMails  List of Ham Mails
      */
     public void learn(final List<String> spamMails, final List<String> hamMails) {
         // Set them new, to not mix up with previous learnings.
@@ -33,7 +35,7 @@ public class BayesSpamFilter {
                 probabilitySpamMailContainingTheWord = alpha / spamMails.size();
             }
             probabilitySpamMailContainingKeyWord.put(word, probabilitySpamMailContainingTheWord);
-    
+            
             if (hamWordCounter.containsKey(word)) {
                 probabilityHamMailContainingTheWord = hamWordCounter.get(word) * 1.0 / hamMails.size();
             } else {
@@ -41,11 +43,13 @@ public class BayesSpamFilter {
             }
             probabilityHamMailContainingKeyWord.put(word, probabilityHamMailContainingTheWord);
         });
+        System.out.println("DONE learning");
     }
     
     /**
      * Parses the given Mails (as Strings) and returns a Map containing each word which was at least in one Mail as keys
      * and the corresponding count of Mails which contain the word at least once as the corresponding values.
+     *
      * @param mailList The list of mails.
      * @return A Map containing each word which was at least in one Mail as keys and the corresponding count of Mails which contain the word at least once as the corresponding values.
      */
@@ -65,8 +69,19 @@ public class BayesSpamFilter {
     }
     
     
-    
-    public void evaluate(final String mail) {
-    
+    public Result evaluate(final String mail) {
+        var allWords = Arrays.stream(mail.split(" "))
+                .distinct()
+                // Ignore words which never occurred in the learning phase.
+                .filter(word -> probabilityHamMailContainingKeyWord.containsKey(word) || probabilitySpamMailContainingKeyWord.containsKey(word))
+                .collect(Collectors.toUnmodifiableList());
+        var Q = allWords.stream().mapToDouble(word -> probabilitySpamMailContainingKeyWord.get(word)).reduce(1, (left, right) -> left * right)
+                / allWords.stream().mapToDouble(word -> probabilityHamMailContainingKeyWord.get(word)).reduce(1, (left, right) -> left * right);
+        System.out.println(Q);
+        if (Q > 1)
+            return Result.SPAM;
+        else
+            return Result.HAM;
     }
 }
+
