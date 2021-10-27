@@ -37,6 +37,8 @@ public class BayesSpamFilter {
             double probabilityHamMailContainingTheWord;
             
             // If we did not find a word at all in one kind (spam/ham), just ad a "count" of alpha as the number of found mails.
+            // If we would not do that, afterwards when multiplying all probabilities of the words, if even one of them is 0,
+            // the whole result would be 0 (as it's only multiplication (and division))
             if (spamWordCounter.containsKey(word)) {
                 probabilitySpamMailContainingTheWord = spamWordCounter.get(word) * 1.0 / spamMails.size();
             } else {
