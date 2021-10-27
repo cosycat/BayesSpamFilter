@@ -17,31 +17,48 @@ public class Main {
 //        String hamCalibratePath = hamLearnPath;
         String spamCalibratePath = "res/spam-kallibrierung";
         String hamCalibratePath = "res/ham-kallibrierung";
+    
+        String spamTestPath = "res/spam-test";
+        String hamTestPath = "res/ham-test";
         
         String mailPath = "";
     
         List<String> spamMails = getMailsAsStringList(spamLearnPath);
         List<String> hamMails = getMailsAsStringList(hamLearnPath);
     
+        
         final var bsf = new BayesSpamFilter();
-    
         bsf.learn(spamMails, hamMails);
-    
+        
+        
+        System.out.println("Kalibrierung:");
         var spamCalibrateMails = getMailsAsStringList(spamCalibratePath);
         var hamCalibrateMails = getMailsAsStringList(hamCalibratePath);
-    
-        final var correctlyDetectedSpamCount = spamCalibrateMails.stream()
+        final var correctlyDetectedSpamCountCalibrate = spamCalibrateMails.stream()
                 .map(bsf::evaluate)
                 .filter(result -> result == Result.SPAM)
                 .count();
-    
-        final var correctlyDetectedHamCount = hamCalibrateMails.stream()
+        final var correctlyDetectedHamCountCalibrate = hamCalibrateMails.stream()
                 .map(bsf::evaluate)
                 .filter(result -> result == Result.HAM)
                 .count();
+        System.out.println("Found " + correctlyDetectedSpamCountCalibrate + " SPAM emails out of " + spamCalibrateMails.size());
+        System.out.println("Found " + correctlyDetectedHamCountCalibrate + " HAM emails out of " + hamCalibrateMails.size());
+        
     
-        System.out.println("Found " + correctlyDetectedSpamCount + " SPAM emails out of " + spamCalibrateMails.size());
-        System.out.println("Found " + correctlyDetectedHamCount + " HAM emails out of " + hamCalibrateMails.size());
+        System.out.println("Tests:");
+        var spamTestMails = getMailsAsStringList(spamTestPath);
+        var hamTestMails = getMailsAsStringList(hamTestPath);
+        final var correctlyDetectedSpamCount = spamTestMails.stream()
+                .map(bsf::evaluate)
+                .filter(result -> result == Result.SPAM)
+                .count();
+        final var correctlyDetectedHamCount = hamTestMails.stream()
+                .map(bsf::evaluate)
+                .filter(result -> result == Result.HAM)
+                .count();
+        System.out.println("Found " + correctlyDetectedSpamCount + " SPAM emails out of " + spamTestMails.size());
+        System.out.println("Found " + correctlyDetectedHamCount + " HAM emails out of " + hamTestMails.size());
     }
     
     

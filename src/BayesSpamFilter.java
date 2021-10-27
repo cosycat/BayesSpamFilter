@@ -6,10 +6,10 @@ import java.util.stream.Collectors;
 
 public class BayesSpamFilter {
     
-    private final double alpha = 1;
+    private final double alpha = 0.00001;
     
-//    private final Pattern wordDelimiter = Pattern.compile("[\\W|\\s]+"); // Only check for natural human language words (more or less), ignore all the weird signs.
-    private final Pattern wordDelimiter = Pattern.compile("\\s+"); // Only use spaces (and newline etc.) as a delimiter, use all other signs as "words" to compare.
+    private final Pattern wordDelimiter = Pattern.compile("[\\W|\\s]+"); // Only check for natural human language words (more or less), ignore all the weird signs.
+//    private final Pattern wordDelimiter = Pattern.compile("\\s+"); // Only use spaces (and newline etc.) as a delimiter, use all other signs as "words" to compare.
     
     private Map<String, BigDecimal> probabilitySpamMailContainingKeyWord;
     private Map<String, BigDecimal> probabilityHamMailContainingKeyWord;
@@ -83,17 +83,17 @@ public class BayesSpamFilter {
                 // Ignore words which never occurred in the learning phase.
                 .filter(word -> probabilityHamMailContainingKeyWord.containsKey(word) && probabilitySpamMailContainingKeyWord.containsKey(word))
                 .collect(Collectors.toUnmodifiableList());
-        BigDecimal upper = new BigDecimal(1);
+        BigDecimal zaehler = new BigDecimal(1);
         for (String allWord : allWords) {
             BigDecimal v = probabilitySpamMailContainingKeyWord.get(allWord);
-            upper = upper.multiply(v);
+            zaehler = zaehler.multiply(v);
         }
-        BigDecimal lower = new BigDecimal(1);
+        BigDecimal nenner = new BigDecimal(1);
         for (String word : allWords) {
             BigDecimal v = probabilityHamMailContainingKeyWord.get(word);
-            lower = lower.multiply(v);
+            nenner = nenner.multiply(v);
         }
-        var Q = upper.divide(lower, RoundingMode.HALF_UP).doubleValue();
+        var Q = nenner.divide(zaehler, RoundingMode.HALF_UP).doubleValue();
 
 //        System.out.println(Q);
         if (Q > 1)
