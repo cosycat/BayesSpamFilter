@@ -1,8 +1,10 @@
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -11,8 +13,10 @@ public class Main {
         
         String spamLearnPath = "res/ham-anlern";
         String hamLearnPath = "res/spam-anlern";
-        String spamCalibratePath = "res/spam-anlern";
-        String hamCalibratePath = "res/spam-anlern";
+//        String spamCalibratePath = spamLearnPath;
+//        String hamCalibratePath = hamLearnPath;
+        String spamCalibratePath = "res/spam-kallibrierung";
+        String hamCalibratePath = "res/ham-kallibrierung";
         
         String mailPath = "";
     
@@ -48,15 +52,14 @@ public class Main {
                     .filter(Files::isRegularFile)
                     .map(path -> {
                         try {
-                            return Files.readString(path, StandardCharsets.ISO_8859_1);
+                            return Files.readString(path, Charset.defaultCharset());
                         } catch (IOException e) {
-                            e.printStackTrace();
                             return "";
                         }
                     })
                     .filter(s -> {
-                        System.out.println(s);
-                        return true;
+//                        System.out.println(s);
+                        return s.length() >= 1; // filter out empty files and failed files
                     })
                     .collect(Collectors.toUnmodifiableList());
         } catch (IOException e) {

@@ -1,12 +1,18 @@
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class BayesSpamFilter {
     
-    private final double alpha = 0.1;
+    private final double alpha = 1;
     
-    private Map<String, Double> probabilitySpamMailContainingKeyWord;
-    private Map<String, Double> probabilityHamMailContainingKeyWord;
+//    private final Pattern wordDelimiter = Pattern.compile("[\\W|\\s]+"); // Only check for natural human language words (more or less), ignore all the weird signs.
+    private final Pattern wordDelimiter = Pattern.compile("\\s+"); // Only use spaces (and newline etc.) as a delimiter, use all other signs as "words" to compare.
+    
+    private Map<String, BigDecimal> probabilitySpamMailContainingKeyWord;
+    private Map<String, BigDecimal> probabilityHamMailContainingKeyWord;
     
     /**
      * Assigns each word a probability P(word|Spam) and P(word|Ham)
@@ -29,19 +35,21 @@ public class BayesSpamFilter {
         allWords.forEach(word -> {
             double probabilitySpamMailContainingTheWord;
             double probabilityHamMailContainingTheWord;
+            
+            // If we did not find a word at all in one kind (spam/ham), just ad a "count" of alpha as the number of found mails.
             if (spamWordCounter.containsKey(word)) {
                 probabilitySpamMailContainingTheWord = spamWordCounter.get(word) * 1.0 / spamMails.size();
             } else {
                 probabilitySpamMailContainingTheWord = alpha / spamMails.size();
             }
-            probabilitySpamMailContainingKeyWord.put(word, probabilitySpamMailContainingTheWord);
+            probabilitySpamMailContainingKeyWord.put(word, BigDecimal.valueOf(probabilitySpamMailContainingTheWord));
             
             if (hamWordCounter.containsKey(word)) {
                 probabilityHamMailContainingTheWord = hamWordCounter.get(word) * 1.0 / hamMails.size();
             } else {
                 probabilityHamMailContainingTheWord = alpha / hamMails.size();
             }
-            probabilityHamMailContainingKeyWord.put(word, probabilityHamMailContainingTheWord);
+            probabilityHamMailContainingKeyWord.put(word, BigDecimal.valueOf(probabilityHamMailContainingTheWord));
         });
         System.out.println("DONE learning");
     }
@@ -56,7 +64,7 @@ public class BayesSpamFilter {
     private Map<String, Integer> parseMailsForWords(final List<String> mailList) {
         Map<String, Integer> wordCounter = new HashMap<>();
         for (var mailText : mailList) {
-            final var allWordsInMail = mailText.split(" ");
+            final var allWordsInMail = wordDelimiter.split(mailText);
             Arrays.stream(allWordsInMail).distinct().forEach(word -> {
                 if (wordCounter.containsKey(word)) {
                     wordCounter.put(word, wordCounter.get(word) + 1);
@@ -70,14 +78,24 @@ public class BayesSpamFilter {
     
     
     public Result evaluate(final String mail) {
-        var allWords = Arrays.stream(mail.split(" "))
+        var allWords = Arrays.stream(wordDelimiter.split(mail))
                 .distinct()
                 // Ignore words which never occurred in the learning phase.
-                .filter(word -> probabilityHamMailContainingKeyWord.containsKey(word) || probabilitySpamMailContainingKeyWord.containsKey(word))
+                .filter(word -> probabilityHamMailContainingKeyWord.containsKey(word) && probabilitySpamMailContainingKeyWord.containsKey(word))
                 .collect(Collectors.toUnmodifiableList());
-        var Q = allWords.stream().mapToDouble(word -> probabilitySpamMailContainingKeyWord.get(word)).reduce(1, (left, right) -> left * right)
-                / allWords.stream().mapToDouble(word -> probabilityHamMailContainingKeyWord.get(word)).reduce(1, (left, right) -> left * right);
-        System.out.println(Q);
+        BigDecimal upper = new BigDecimal(1);
+        for (String allWord : allWords) {
+            BigDecimal v = probabilitySpamMailContainingKeyWord.get(allWord);
+            upper = upper.multiply(v);
+        }
+        BigDecimal lower = new BigDecimal(1);
+        for (String word : allWords) {
+            BigDecimal v = probabilityHamMailContainingKeyWord.get(word);
+            lower = lower.multiply(v);
+        }
+        var Q = upper.divide(lower, RoundingMode.HALF_UP).doubleValue();
+
+//        System.out.println(Q);
         if (Q > 1)
             return Result.SPAM;
         else
