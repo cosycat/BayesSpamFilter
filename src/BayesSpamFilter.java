@@ -44,6 +44,7 @@ public class BayesSpamFilter {
             }
             probabilitySpamMailContainingKeyWord.put(word, BigDecimal.valueOf(probabilitySpamMailContainingTheWord));
             
+            // Same for the other kind (spam/ham)
             if (hamWordCounter.containsKey(word)) {
                 probabilityHamMailContainingTheWord = hamWordCounter.get(word) * 1.0 / hamMails.size();
             } else {
@@ -76,7 +77,11 @@ public class BayesSpamFilter {
         return wordCounter;
     }
     
-    
+    /**
+     * Evaluates the given Mail, and returns the Result (either SPAM or HAM)
+     * @param mail the mail to evaluate
+     * @return Whether the Mail was categorized as Spam or Ham
+     */
     public Result evaluate(final String mail) {
         var allWords = Arrays.stream(wordDelimiter.split(mail))
                 .distinct()

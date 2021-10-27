@@ -32,21 +32,25 @@ public class Main {
         
         
         System.out.println("Kalibrierung:");
+        // read them in
         var spamCalibrateMails = getMailsAsStringList(spamCalibratePath);
         var hamCalibrateMails = getMailsAsStringList(hamCalibratePath);
+        // evaluate them
         final var correctlyDetectedSpamCountCalibrate = spamCalibrateMails.stream()
-                .map(bsf::evaluate)
-                .filter(result -> result == Result.SPAM)
-                .count();
+                .map(bsf::evaluate) // here they get evaluated.
+                .filter(result -> result == Result.SPAM) // the correctly parsed ones are kept
+                .count(); // and then counted
         final var correctlyDetectedHamCountCalibrate = hamCalibrateMails.stream()
                 .map(bsf::evaluate)
                 .filter(result -> result == Result.HAM)
                 .count();
+        // print out the evaluated numbers
         System.out.println("Found " + correctlyDetectedSpamCountCalibrate + " SPAM emails out of " + spamCalibrateMails.size());
         System.out.println("Found " + correctlyDetectedHamCountCalibrate + " HAM emails out of " + hamCalibrateMails.size());
         
     
         System.out.println("Tests:");
+        // same procedure as in Kalibrierung above
         var spamTestMails = getMailsAsStringList(spamTestPath);
         var hamTestMails = getMailsAsStringList(hamTestPath);
         final var correctlyDetectedSpamCount = spamTestMails.stream()
@@ -71,6 +75,7 @@ public class Main {
                         try {
                             return Files.readString(path, Charset.defaultCharset());
                         } catch (IOException e) {
+                            // If the file can't be read, just add the empty string, to filter it out afterwards.
                             return "";
                         }
                     })
